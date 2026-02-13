@@ -1,95 +1,38 @@
-# Change Log
+# Changelog
 
-All notable changes to the "Localhost Manager (Retro)" extension will be documented in this file.
+All notable changes to the "Localhost Manager" extension will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
 
 ## [0.0.1] - 2024-02-12
 
 ### Added
-- 🎨 **Retro Windows 95 UI** - Classic early 2000s aesthetic
-- 🔍 **Smart Port Filtering** - Search by port, type, process, or custom tags
-- 🏷️ **Custom Port Tagging** - Name your servers for easy identification
-- 📊 **Rich Metadata Display** - View uptime, memory usage, and CPU stats
-- 🔌 **Auto-Detection** - Recognizes React, Flask, Python, WebSocket, databases, and more
-- 🌐 **Quick Actions** - Open in browser or kill processes with one click
-- 📱 **Dual Interface** - Compact sidebar panel + full retro panel
-- 🔄 **Auto-Refresh** - Live updates every 2-3 seconds
-- ⚡ **Type Filters** - Click chips to filter by server type
-- 💾 **Persistent Tags** - Tags saved per workspace across sessions
-
-### Features in Detail
-
-#### Port Management
-- View all active localhost ports at a glance
-- Automatically detects common frameworks and servers
-- Shows process details (PID, user, command)
-- One-click process termination
-
-#### Smart Filtering
-- Text search across ports, types, processes, and tags
-- Click-to-filter type chips (🐍 Python, ⚛️ React, etc.)
-- Combined filters for precise results
-- Real-time filter status display
-
-#### Custom Tagging
-- Add memorable names to your ports
-- Tags persist across VS Code sessions
-- Searchable through filter system
-- Easy to update or remove
-
-#### Rich Metadata
-- **Uptime** - How long the server has been running
-- **Memory** - RAM usage in MB/GB
-- **CPU** - Current CPU percentage
-- **Type** - Auto-detected server/framework type
-- **Custom Name** - Your personal tag (if set)
-
-#### Supported Auto-Detections
-- ⚛️ React/Next.js (ports 3000, 3001)
-- 🐍 Python/Flask/Django (ports 5000, 5001, 8000)
-- 🔌 WebSocket servers (ports 18000-18999)
-- 🐘 PostgreSQL (port 5432)
-- 🍃 MongoDB (port 27017)
-- 📦 Redis (port 6379)
-- 🗄️ MySQL (port 3306)
-- 🟢 Node.js
-- 🅰️ Angular (port 4200)
-- ☕ Java/Tomcat
-- 💎 Ruby
-- And more!
-
-### Commands
-- `Localhost Manager: Open Panel` - Full retro UI
-- `Localhost Manager: Refresh Ports` - Manual refresh
-- `Localhost Manager: Kill Port` - Quick-pick to kill a port
-- `Localhost Manager: Tag/Rename Port` - Add custom names
+- Initial release
+- Native VS Code UI design following standard design tokens
+- Sidebar panel with compact port view
+- Full table panel view for detailed port information
+- Auto-refresh with pause/play control (3s sidebar, 2s panel)
+- Port filtering by port number, type, process, or user
+- Custom port tagging/naming via Command Palette
+- Copy kill commands to clipboard (safe, non-destructive)
+- One-click open ports in browser
+- Rich metadata display: uptime, memory usage, CPU percentage
+- Auto-detection of common port types (React, Flask, databases, etc.)
+- VS Code Codicons integration for consistent UI
 
 ### Platform Support
-- ✅ macOS (primary support)
+- ✅ macOS (via lsof)
 - ✅ Linux (via lsof)
-- ⏳ Windows (coming soon)
+- ⏳ Windows support coming soon (will use netstat)
 
----
+### Commands
+- `Localhost Manager: Open Panel` - Open full panel view
+- `Localhost Manager: Refresh Ports` - Manually refresh port list
+- `Localhost Manager: Kill Port` - Quick-pick to copy kill command
+- `Localhost Manager: Tag/Rename Port` - Add custom names to ports
 
-## Future Plans
-
-### Planned Features
-- 🌐 Network traffic statistics
-- 📊 Request count monitoring
-- 🔔 Port change notifications
-- 🎨 Custom color coding
-- 📝 Port notes/descriptions
-- 🔗 Quick port linking
-- 🪟 Windows support (via netstat)
-- 🐳 Docker container detection
-- 🌍 Environment detection (dev/prod)
-- 📈 Historical stats graphs
-
-### Community Feedback Welcome!
-Found a bug? Have a feature request? Open an issue on GitHub!
-
----
-
-**Enjoy managing your localhost servers with style! 🖥️✨**
-
-Made with 💖 by Alex Catus
-Part of the Retro Portfolio ecosystem
+[Unreleased]: https://github.com/mtldev514/localhost-manager-vscode/compare/v0.0.1...HEAD
+[0.0.1]: https://github.com/mtldev514/localhost-manager-vscode/releases/tag/v0.0.1
