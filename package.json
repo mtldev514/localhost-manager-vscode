@@ -1,8 +1,8 @@
 {
   "name": "localhost-manager",
   "displayName": "Localhost Manager",
-  "description": "Easily manage your localhost ports from your VS Code extension. Filter ports, tag servers, view metadata (uptime, memory, CPU). Perfect for multi-project developers!",
-  "version": "0.0.3",
+  "description": "A dashboard to easily find & kill processes running on your localhost ports.",
+  "version": "1.0.0",
   "publisher": "mtldev514",
   "icon": "icon.png",
   "engines": {
