@@ -1,7 +1,7 @@
 {
-  "name": "localhost-manager-retro",
-  "displayName": "Localhost Manager (Retro)",
-  "description": "Beautiful retro Windows 95 UI for managing localhost servers. Filter ports, tag servers, view metadata (uptime, memory, CPU). Perfect for multi-project developers!",
+  "name": "localhost-manager",
+  "displayName": "Localhost Manager",
+  "description": "Easily manage your localhost ports from your VS Code extension. Filter ports, tag servers, view metadata (uptime, memory, CPU). Perfect for multi-project developers!",
   "version": "0.0.1",
   "publisher": "mtldev514",
   "icon": "icon.png",
@@ -16,16 +16,14 @@
     "localhost",
     "ports",
     "server",
-    "retro",
     "development",
-    "windows95",
     "port-manager",
     "process-manager",
     "monitoring",
     "developer-tools"
   ],
   "galleryBanner": {
-    "color": "#008080",
+    "color": "#1e1e1e",
     "theme": "dark"
   },
   "activationEvents": [

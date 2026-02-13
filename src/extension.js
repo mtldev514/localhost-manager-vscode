@@ -10,7 +10,7 @@ let portsViewProvider;
  * @param {vscode.ExtensionContext} context
  */
 function activate(context) {
-    console.log('Localhost Manager (Retro) is now active!');
+    console.log('Localhost Manager is now active!');
 
     // Store context globally for tag access
     global.extensionContext = context;
@@ -248,6 +248,8 @@ class PortsViewProvider {
     constructor(extensionUri) {
         this._extensionUri = extensionUri;
         this._view = undefined;
+        this._autoRefreshInterval = null;
+        this._isAutoRefreshEnabled = true;
     }
 
     resolveWebviewView(webviewView) {
@@ -278,12 +280,38 @@ class PortsViewProvider {
                 case 'open':
                     vscode.env.openExternal(vscode.Uri.parse(`http://localhost:${data.port}`));
                     break;
+                case 'toggleAutoRefresh':
+                    this.toggleAutoRefresh();
+                    break;
             }
         });
 
         // Auto-refresh every 3 seconds
-        setInterval(() => this.refresh(), 3000);
+        this.startAutoRefresh();
         this.refresh();
+    }
+
+    startAutoRefresh() {
+        if (this._autoRefreshInterval) {
+            clearInterval(this._autoRefreshInterval);
+        }
+        this._autoRefreshInterval = setInterval(() => {
+            if (this._isAutoRefreshEnabled) {
+                this.refresh();
+            }
+        }, 3000);
+    }
+
+    toggleAutoRefresh() {
+        this._isAutoRefreshEnabled = !this._isAutoRefreshEnabled;
+        if (this._view) {
+            this._view.webview.postMessage({
+                type: 'autoRefreshState',
+                enabled: this._isAutoRefreshEnabled
+            });
+        }
+        const status = this._isAutoRefreshEnabled ? 'enabled' : 'disabled';
+        vscode.window.showInformationMessage(`Auto-refresh ${status}`);
     }
 
     async refresh() {
@@ -308,8 +336,8 @@ class PortsViewProvider {
     <style>
         body {
             padding: 10px;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 12px;
+            font-family: var(--vscode-font-family);
+            font-size: var(--vscode-font-size);
         }
 
         .header {
@@ -334,7 +362,7 @@ class PortsViewProvider {
         }
 
         .port-number {
-            font-weight: bold;
+            font-weight: 600;
             color: var(--vscode-terminal-ansiGreen);
         }
 
@@ -353,15 +381,16 @@ class PortsViewProvider {
         }
 
         button {
-            padding: 2px 6px;
-            border: 1px solid var(--vscode-button-border);
+            padding: 4px 8px;
+            border: 1px solid transparent;
             background: var(--vscode-button-background);
             color: var(--vscode-button-foreground);
             cursor: pointer;
-            font-size: 10px;
+            font-family: var(--vscode-font-family);
+            font-size: 13px;
             border-radius: 2px;
-            min-width: 24px;
-            height: 22px;
+            min-width: 28px;
+            height: 26px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -372,18 +401,16 @@ class PortsViewProvider {
         }
 
         button:active {
-            opacity: 0.8;
+            background: var(--vscode-button-hoverBackground);
         }
 
         .btn-kill {
-            background: var(--vscode-inputValidation-errorBackground);
-            color: var(--vscode-inputValidation-errorForeground);
-            border-color: var(--vscode-inputValidation-errorBorder);
+            background: var(--vscode-button-secondaryBackground);
+            color: var(--vscode-button-secondaryForeground);
         }
 
         .btn-kill:hover {
-            filter: brightness(1.1);
-            opacity: 0.9;
+            background: var(--vscode-button-secondaryHoverBackground);
         }
 
         .empty {
@@ -392,68 +419,27 @@ class PortsViewProvider {
             color: var(--vscode-descriptionForeground);
         }
 
-        .refresh-btn {
-            width: 100%;
-            margin-bottom: 10px;
-        }
-
         .filter-container {
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
 
         .filter-input {
             width: 100%;
-            padding: 6px;
+            padding: 4px 8px;
             border: 1px solid var(--vscode-input-border);
             background: var(--vscode-input-background);
             color: var(--vscode-input-foreground);
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 12px;
+            font-family: var(--vscode-font-family);
+            font-size: 13px;
         }
 
         .filter-input:focus {
             outline: 1px solid var(--vscode-focusBorder);
-        }
-
-        .filter-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 4px;
-            margin-top: 6px;
-        }
-
-        .filter-tag {
-            padding: 2px 8px;
-            font-size: 10px;
-            background: var(--vscode-badge-background);
-            color: var(--vscode-badge-foreground);
-            border-radius: 3px;
-            cursor: pointer;
-            border: 1px solid transparent;
-        }
-
-        .filter-tag:hover {
-            border-color: var(--vscode-focusBorder);
-            background: var(--vscode-list-hoverBackground);
-        }
-
-        .filter-tag.active {
-            background: var(--vscode-button-background);
-            color: var(--vscode-button-foreground);
-            border-color: var(--vscode-button-background);
-        }
-
-        .filter-tag.active:hover {
-            background: var(--vscode-button-hoverBackground);
-            border-color: var(--vscode-button-hoverBackground);
+            outline-offset: -1px;
         }
     </style>
 </head>
 <body>
-    <button class="refresh-btn" onclick="refresh()">
-        <i class="codicon codicon-refresh"></i> Refresh
-    </button>
-
     <div class="filter-container">
         <input
             type="text"
@@ -462,12 +448,16 @@ class PortsViewProvider {
             placeholder="Filter by port, type, or process..."
             oninput="filterPorts()"
         />
-        <div class="filter-tags" id="filter-tags"></div>
     </div>
 
-    <div class="header">
-        <strong>Active Ports: <span id="count">0</span></strong>
-        <span style="margin-left: 10px; font-size: 10px;" id="filter-status"></span>
+    <div class="header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <strong>Active Ports: <span id="count">0</span></strong>
+            <span style="margin-left: 10px; font-size: 10px;" id="filter-status"></span>
+        </div>
+        <button id="auto-refresh-toggle" onclick="toggleAutoRefresh()" title="Toggle auto-refresh" style="padding: 2px 6px; font-size: 11px;">
+            <i id="refresh-icon" class="codicon codicon-debug-pause"></i>
+        </button>
     </div>
     <div id="ports"></div>
 
@@ -475,7 +465,6 @@ class PortsViewProvider {
         const vscode = acquireVsCodeApi();
         let allPorts = [];
         let currentFilter = '';
-        let activeTypeFilter = '';
 
         function refresh() {
             vscode.postMessage({ type: 'refresh' });
@@ -502,39 +491,25 @@ class PortsViewProvider {
             });
         }
 
+        function toggleAutoRefresh() {
+            vscode.postMessage({ type: 'toggleAutoRefresh' });
+        }
+
         function filterPorts() {
             currentFilter = document.getElementById('filter-input').value.toLowerCase();
             renderPorts();
-        }
-
-        function setTypeFilter(type) {
-            if (activeTypeFilter === type) {
-                activeTypeFilter = '';
-            } else {
-                activeTypeFilter = type;
-            }
-            renderPorts();
-            updateFilterTags();
-        }
-
-        function updateFilterTags() {
-            const types = [...new Set(allPorts.map(p => p.type.type))];
-            const tagsContainer = document.getElementById('filter-tags');
-
-            tagsContainer.innerHTML = types.map(type => {
-                const count = allPorts.filter(p => p.type.type === type).length;
-                const icon = allPorts.find(p => p.type.type === type)?.type.icon || '';
-                const isActive = activeTypeFilter === type ? 'active' : '';
-                return \`<span class="filter-tag \${isActive}" onclick="setTypeFilter('\${type}')">\${icon} \${type} (\${count})</span>\`;
-            }).join('');
         }
 
         window.addEventListener('message', event => {
             const message = event.data;
             if (message.type === 'update') {
                 allPorts = message.ports;
-                updateFilterTags();
                 renderPorts();
+            } else if (message.type === 'autoRefreshState') {
+                const icon = document.getElementById('refresh-icon');
+                if (icon) {
+                    icon.className = message.enabled ? 'codicon codicon-debug-pause' : 'codicon codicon-debug-continue';
+                }
             }
         });
 
@@ -545,11 +520,6 @@ class PortsViewProvider {
 
             // Filter ports
             let filteredPorts = allPorts;
-
-            // Type filter
-            if (activeTypeFilter) {
-                filteredPorts = filteredPorts.filter(p => p.type.type === activeTypeFilter);
-            }
 
             // Text filter
             if (currentFilter) {
@@ -565,7 +535,7 @@ class PortsViewProvider {
             countEl.textContent = allPorts.length;
 
             // Update filter status
-            if (currentFilter || activeTypeFilter) {
+            if (currentFilter) {
                 statusEl.textContent = \`(showing \${filteredPorts.length} of \${allPorts.length})\`;
             } else {
                 statusEl.textContent = '';
@@ -592,7 +562,7 @@ class PortsViewProvider {
                         </div>
                     </div>
                     <div class="port-actions">
-                        <button onclick="openPort('\${p.port}')" title="Open http://localhost:\${p.port}">
+                        <button class="btn-kill" onclick="openPort('\${p.port}')" title="Open http://localhost:\${p.port}">
                             <i class="codicon codicon-link-external"></i>
                         </button>
                         <button class="btn-kill" onclick="copyKillCommand('\${p.port}', '\${p.pid}')" title="Copy kill command">
@@ -638,6 +608,7 @@ class PortsPanel {
         this._panel = panel;
         this._extensionUri = extensionUri;
         this._disposables = [];
+        this._isAutoRefreshEnabled = true;
 
         this._update();
 
@@ -661,6 +632,9 @@ class PortsPanel {
                     case 'open':
                         vscode.env.openExternal(vscode.Uri.parse(`http://localhost:${message.port}`));
                         break;
+                    case 'toggleAutoRefresh':
+                        this.toggleAutoRefresh();
+                        break;
                 }
             },
             null,
@@ -668,7 +642,21 @@ class PortsPanel {
         );
 
         // Auto-refresh
-        setInterval(() => this._update(), 2000);
+        setInterval(() => {
+            if (this._isAutoRefreshEnabled) {
+                this._update();
+            }
+        }, 2000);
+    }
+
+    toggleAutoRefresh() {
+        this._isAutoRefreshEnabled = !this._isAutoRefreshEnabled;
+        this._panel.webview.postMessage({
+            type: 'autoRefreshState',
+            enabled: this._isAutoRefreshEnabled
+        });
+        const status = this._isAutoRefreshEnabled ? 'enabled' : 'disabled';
+        vscode.window.showInformationMessage(`Auto-refresh ${status}`);
     }
 
     async _update() {
@@ -696,207 +684,201 @@ class PortsPanel {
         }
 
         body {
-            font-family: 'Courier New', Courier, monospace;
-            background: #008080;
+            font-family: var(--vscode-font-family);
+            font-size: var(--vscode-font-size);
+            background: var(--vscode-editor-background);
+            color: var(--vscode-editor-foreground);
             padding: 20px;
-            color: #000;
         }
 
         .window {
             max-width: 1200px;
             margin: 0 auto;
-            background: #c0c0c0;
-            border: 2px outset #fff;
-            box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
         }
 
         .title-bar {
-            background: linear-gradient(90deg, #000080, #1084d0);
-            color: white;
-            padding: 4px 8px;
-            font-weight: bold;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            background: var(--vscode-titleBar-activeBackground);
+            color: var(--vscode-titleBar-activeForeground);
+            padding: 8px 16px;
+            font-weight: 600;
+            border-bottom: 1px solid var(--vscode-panel-border);
+            margin-bottom: 20px;
         }
 
         .content {
-            padding: 20px;
-            background: #c0c0c0;
+            padding: 0;
         }
 
         h1 {
             font-size: 20px;
-            margin-bottom: 10px;
-            color: #000080;
+            font-weight: 300;
+            margin-bottom: 16px;
+            color: var(--vscode-foreground);
         }
 
         .status-bar {
-            background: #c0c0c0;
-            border: 2px inset #fff;
-            padding: 8px;
-            margin-bottom: 20px;
+            background: var(--vscode-badge-background);
+            color: var(--vscode-badge-foreground);
+            padding: 6px 12px;
+            margin-bottom: 16px;
             font-size: 12px;
+            border-radius: 3px;
+            display: inline-block;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            background: white;
-            border: 2px inset #fff;
+            background: var(--vscode-editor-background);
+            border: 1px solid var(--vscode-panel-border);
         }
 
         th {
-            background: #000080;
-            color: white;
-            padding: 8px;
+            background: var(--vscode-editorGroupHeader-tabsBackground);
+            color: var(--vscode-foreground);
+            padding: 10px 12px;
             text-align: left;
-            font-weight: bold;
+            font-weight: 600;
+            font-size: 11px;
+            border-bottom: 1px solid var(--vscode-panel-border);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
         }
 
         td {
-            padding: 8px;
-            border-bottom: 1px solid #c0c0c0;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--vscode-panel-border);
+            font-size: 13px;
         }
 
         tr:hover {
-            background: #ffffcc;
+            background: var(--vscode-list-hoverBackground);
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
         }
 
         .port-link {
-            color: #0000ff;
+            color: var(--vscode-textLink-foreground);
             text-decoration: underline;
             cursor: pointer;
         }
 
+        .port-link:hover {
+            color: var(--vscode-textLink-activeForeground);
+        }
+
         .btn {
-            background: #c0c0c0;
-            border: 2px outset #fff;
-            padding: 2px 8px;
+            background: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+            border: 1px solid transparent;
+            padding: 4px 12px;
             cursor: pointer;
-            font-family: inherit;
-            font-size: 11px;
+            font-family: var(--vscode-font-family);
+            font-size: 13px;
             margin: 2px;
             min-width: 28px;
-            height: 24px;
+            height: 28px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 4px;
+            border-radius: 2px;
         }
 
         .btn:hover {
-            background: #e0e0e0;
+            background: var(--vscode-button-hoverBackground);
         }
 
         .btn:active {
-            border-style: inset;
+            background: var(--vscode-button-hoverBackground);
         }
 
         .btn-danger {
-            background: #d73a49;
-            color: white;
-            border-color: #cb2431;
+            background: var(--vscode-button-secondaryBackground);
+            color: var(--vscode-button-secondaryForeground);
         }
 
         .btn-danger:hover {
-            background: #e04856;
-            filter: brightness(1.05);
+            background: var(--vscode-button-secondaryHoverBackground);
         }
 
         .btn-refresh {
-            background: #28a745;
-            color: white;
-            border-color: #269f42;
+            background: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
         }
 
         .btn-refresh:hover {
-            background: #269f42;
+            background: var(--vscode-button-hoverBackground);
         }
 
         .toolbar {
-            margin-bottom: 20px;
-            padding: 10px;
-            background: #c0c0c0;
-            border: 2px inset #fff;
+            margin-bottom: 16px;
+            padding: 8px;
+            background: var(--vscode-editorGroupHeader-tabsBackground);
+            border: 1px solid var(--vscode-panel-border);
+            border-radius: 3px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
         }
 
         .empty-state {
             text-align: center;
             padding: 40px;
-            color: #666;
+            color: var(--vscode-descriptionForeground);
+            font-size: 14px;
         }
 
         @keyframes blink {
             0%, 50% { opacity: 1; }
-            51%, 100% { opacity: 0; }
+            51%, 100% { opacity: 0.3; }
         }
 
         .status-indicator {
             display: inline-block;
-            width: 10px;
-            height: 10px;
-            background: #00ff00;
+            width: 8px;
+            height: 8px;
+            background: var(--vscode-terminal-ansiGreen);
             border-radius: 50%;
-            margin-right: 5px;
-            animation: blink 1s infinite;
+            margin-right: 8px;
+            animation: blink 1.5s infinite;
         }
 
         .filter-box {
-            margin-bottom: 15px;
-            padding: 10px;
-            background: white;
-            border: 2px inset #fff;
+            margin-bottom: 16px;
+            padding: 12px;
+            background: var(--vscode-sideBar-background);
+            border: 1px solid var(--vscode-panel-border);
+            border-radius: 3px;
         }
 
         .filter-input {
             width: 100%;
             padding: 4px 8px;
-            border: 2px inset #fff;
-            background: white;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 12px;
+            border: 1px solid var(--vscode-input-border);
+            background: var(--vscode-input-background);
+            color: var(--vscode-input-foreground);
+            font-family: var(--vscode-font-family);
+            font-size: 13px;
+            border-radius: 2px;
         }
 
-        .filter-chips {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin-top: 8px;
+        .filter-input:focus {
+            outline: 1px solid var(--vscode-focusBorder);
+            outline-offset: -1px;
+            border-color: var(--vscode-focusBorder);
         }
 
-        .filter-chip {
-            padding: 3px 10px;
-            font-size: 11px;
-            background: #c0c0c0;
-            border: 2px outset #fff;
-            cursor: pointer;
-        }
-
-        .filter-chip:hover {
-            background: #e0e0e0;
-        }
-
-        .filter-chip:active {
-            border-style: inset;
-        }
-
-        .filter-chip.active {
-            background: #0366d6;
-            color: white;
-            border-style: inset;
-            border-color: #0256c7;
+        .filter-input::placeholder {
+            color: var(--vscode-input-placeholderForeground);
         }
     </style>
 </head>
 <body>
-    <div class="window">
-        <div class="title-bar">
-            <span>🖥️ Localhost Manager - VS Code Extension</span>
-        </div>
-
-        <div class="content">
-            <h1>Local Servers Monitor</h1>
+    <div class="content">
+        <h1>Localhost Manager</h1>
 
             <div class="status-bar">
                 <span class="status-indicator"></span>
@@ -911,12 +893,14 @@ class PortsPanel {
                     id="filter-input-retro"
                     placeholder="Filter by port, type, or process..."
                 />
-                <div class="filter-chips" id="filter-chips-retro"></div>
             </div>
 
             <div class="toolbar">
                 <button class="btn btn-refresh" onclick="refresh()">
                     <i class="codicon codicon-refresh"></i> Refresh
+                </button>
+                <button class="btn" id="auto-refresh-toggle-panel" onclick="toggleAutoRefresh()" title="Toggle auto-refresh">
+                    <i id="refresh-icon-panel" class="codicon codicon-debug-pause"></i> Auto-refresh
                 </button>
                 <button class="btn" onclick="clearFilters()">
                     <i class="codicon codicon-clear-all"></i> Clear Filters
@@ -924,14 +908,12 @@ class PortsPanel {
             </div>
 
             <div id="ports-table-container"></div>
-        </div>
     </div>
 
     <script>
         const vscode = acquireVsCodeApi();
         const allPortsData = ${JSON.stringify(ports)};
         let currentFilterText = '';
-        let activeChipFilter = '';
 
         function refresh() {
             vscode.postMessage({ type: 'refresh' });
@@ -958,35 +940,25 @@ class PortsPanel {
             });
         }
 
+        function toggleAutoRefresh() {
+            vscode.postMessage({ type: 'toggleAutoRefresh' });
+        }
+
         function clearFilters() {
             currentFilterText = '';
-            activeChipFilter = '';
             document.getElementById('filter-input-retro').value = '';
             renderTable();
-            updateChips();
         }
 
-        function setChipFilter(type) {
-            if (activeChipFilter === type) {
-                activeChipFilter = '';
-            } else {
-                activeChipFilter = type;
+        window.addEventListener('message', event => {
+            const message = event.data;
+            if (message.type === 'autoRefreshState') {
+                const icon = document.getElementById('refresh-icon-panel');
+                if (icon) {
+                    icon.className = message.enabled ? 'codicon codicon-debug-pause' : 'codicon codicon-debug-continue';
+                }
             }
-            renderTable();
-            updateChips();
-        }
-
-        function updateChips() {
-            const types = [...new Set(allPortsData.map(p => p.type.type))];
-            const chipsContainer = document.getElementById('filter-chips-retro');
-
-            chipsContainer.innerHTML = types.map(type => {
-                const count = allPortsData.filter(p => p.type.type === type).length;
-                const icon = allPortsData.find(p => p.type.type === type)?.type.icon || '';
-                const isActive = activeChipFilter === type ? 'active' : '';
-                return \`<button class="filter-chip \${isActive}" onclick="setChipFilter('\${type}')">\${icon} \${type} (\${count})</button>\`;
-            }).join('');
-        }
+        });
 
         function renderTable() {
             const container = document.getElementById('ports-table-container');
@@ -997,10 +969,6 @@ class PortsPanel {
 
             // Filter logic
             let filtered = allPortsData;
-
-            if (activeChipFilter) {
-                filtered = filtered.filter(p => p.type.type === activeChipFilter);
-            }
 
             if (currentFilterText) {
                 const search = currentFilterText.toLowerCase();
@@ -1013,7 +981,7 @@ class PortsPanel {
             }
 
             // Update status
-            if (currentFilterText || activeChipFilter) {
+            if (currentFilterText) {
                 statusEl.textContent = \`(showing \${filtered.length} of \${allPortsData.length})\`;
             } else {
                 statusEl.textContent = '';
@@ -1057,7 +1025,7 @@ class PortsPanel {
                             <td>\${p.memory}</td>
                             <td>\${p.cpu}</td>
                             <td>
-                                <button class="btn" onclick="openPort('\${p.port}')" title="Open http://localhost:\${p.port}">
+                                <button class="btn btn-danger" onclick="openPort('\${p.port}')" title="Open http://localhost:\${p.port}">
                                     <i class="codicon codicon-link-external"></i>
                                 </button>
                                 <button class="btn btn-danger" onclick="copyKillCommand('\${p.port}', '\${p.pid}')" title="Copy kill command">
@@ -1078,7 +1046,6 @@ class PortsPanel {
         });
 
         // Initial render
-        updateChips();
         renderTable();
     </script>
 </body>
