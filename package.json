@@ -1,0 +1,115 @@
+{
+  "name": "localhost-manager-retro",
+  "displayName": "Localhost Manager (Retro)",
+  "description": "Beautiful retro Windows 95 UI for managing localhost servers. Filter ports, tag servers, view metadata (uptime, memory, CPU). Perfect for multi-project developers!",
+  "version": "0.0.1",
+  "publisher": "mtldev514",
+  "icon": "icon.png",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other",
+    "Visualization"
+  ],
+  "keywords": [
+    "localhost",
+    "ports",
+    "server",
+    "retro",
+    "development",
+    "windows95",
+    "port-manager",
+    "process-manager",
+    "monitoring",
+    "developer-tools"
+  ],
+  "galleryBanner": {
+    "color": "#008080",
+    "theme": "dark"
+  },
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./src/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "localhost-manager.openPanel",
+        "title": "Localhost Manager: Open Panel",
+        "icon": "$(server)"
+      },
+      {
+        "command": "localhost-manager.refreshPorts",
+        "title": "Localhost Manager: Refresh Ports",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "localhost-manager.killPort",
+        "title": "Localhost Manager: Kill Port"
+      },
+      {
+        "command": "localhost-manager.tagPort",
+        "title": "Localhost Manager: Tag/Rename Port",
+        "icon": "$(tag)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "localhost-manager",
+          "title": "Localhost Manager",
+          "icon": "$(server)"
+        }
+      ]
+    },
+    "views": {
+      "localhost-manager": [
+        {
+          "type": "webview",
+          "id": "localhost-manager.portsView",
+          "name": "Active Ports"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "localhost-manager.refreshPorts",
+          "when": "view == localhost-manager.portsView",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "pretest": "npm run lint",
+    "test": "node ./test/runTest.js"
+  },
+  "dependencies": {
+    "@vscode/codicons": "^0.0.36"
+  },
+  "devDependencies": {
+    "@types/node": "20.x",
+    "@types/vscode": "^1.80.0",
+    "eslint": "^8.50.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mtldev514/localhost-manager-vscode.git"
+  },
+  "author": {
+    "name": "Alex Catus",
+    "url": "https://github.com/mtldev514"
+  },
+  "license": "MIT",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/mtldev514/localhost-manager-vscode/issues"
+  },
+  "homepage": "https://github.com/mtldev514/localhost-manager-vscode#readme",
+  "dependencies": {
+    "@vscode/codicons": "^0.0.44"
+  }
+}
